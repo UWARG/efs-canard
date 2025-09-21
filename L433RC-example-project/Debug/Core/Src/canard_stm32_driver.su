@@ -1,3 +1,9 @@
-../Core/Src/canard_stm32_driver.c:20:9:canardSTM32Recieve	64	static
-../Core/Src/canard_stm32_driver.c:71:9:canardSTM32Transmit	56	static
-../Core/Src/canard_stm32_driver.c:123:6:getUniqueID	32	static
+../Core/Src/canard_stm32_driver.c:24:13:sendNodeStatus	64	static
+../Core/Src/canard_stm32_driver.c:52:13:handleGetNodeInfo	848	static
+../Core/Src/canard_stm32_driver.c:86:13:handleArrayCommand	16	static
+../Core/Src/canard_stm32_driver.c:90:6:shouldAcceptTransfer	24	static
+../Core/Src/canard_stm32_driver.c:137:6:onTransferReceived	16	static
+../Core/Src/canard_stm32_driver.c:175:6:HAL_CAN_RxFifo0MsgPendingCallback	80	static
+../Core/Src/canard_stm32_driver.c:200:6:initCAN	72	static
+../Core/Src/canard_stm32_driver.c:237:6:sendCANTx	40	static
+../Core/Src/canard_stm32_driver.c:268:6:periodicCANTasks	16	static

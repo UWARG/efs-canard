@@ -1,20 +1,19 @@
-/*
- * canard_stm32_driver.h
- *
- *  Created on: Jul 9, 2024
- *      Author: ronik
- */
+#pragma once
 
-#ifndef INC_CANARD_STM32_DRIVER_H_
-#define INC_CANARD_STM32_DRIVER_H_
+/**
+  * @brief  Initialize HAL CAN and canard.
+  * @retval None
+  */
+void initCAN(void);
 
-#include <stdint.h>
-#include <stm32l4xx_hal.h>
-#include <canard.h>
-#include <string.h>
+/**
+  * @brief  Send all CAN Tx messages queued in canard.
+  * @retval None
+  */
+void sendCANTx(void);
 
-int16_t canardSTM32Recieve(CAN_HandleTypeDef *hcan, uint32_t RxLocation, CanardCANFrame *const rx_frame);
-int16_t canardSTM32Transmit(CAN_HandleTypeDef *hcan, const CanardCANFrame* const tx_frame);
-void getUniqueID(uint8_t id[16]);
-
-#endif /* INC_CANARD_STM32_DRIVER_H_ */
+/**
+  * @brief  Execute periodic CAN maintenance tasks.
+  * @retval None
+  */
+void periodicCANTasks(void);
