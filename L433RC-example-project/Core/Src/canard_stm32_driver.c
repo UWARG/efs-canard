@@ -73,19 +73,39 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 		return;
 	}
 
-	HAL_FLASH_Unlock();
-
-	static int data_index = 0;
-	for(int i=0; i < 4; i++){
-		HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, fwupdate->flash_address, pkt.data.data[data_index]); //Thiis logic is wrong
-		//Double word means it writes 64 bits at a time (a word is 32 bits)
-		//Might have to change around the values
-		fwupdate->flash_address += 8; //8 bytes long = 64 bits
-		data_index += 64;
-
+	if (pkt.data.len == 0) {
+	    // No more data – update complete --> need to add flags for this to stop the update now
+	    fwupdate.in_progress = false;
+	    printf("Firmware update complete\n");
+	    return;
 	}
 
+	HAL_FLASH_Unlock();
+
+	uint32_t bytes_written = 0;
+	while(bytes_written < pkt.data.len){
+		uint8_t chunk[8] = {0xFF}; //Default erased value
+		uint32_t remain = pkt.data.len - bytes_written;
+		uint32_t to_copy = (remain >= 8U) ? 8U : remain;
+
+		uint64_t double_word;
+
+		memcpy(&double_word, chunk, 8); // Makes a 64 bit object for the HAL_FLASH
+
+		if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, fwupdate->flash_address, double_word) != HAL_OK){
+			HAL_FLASH_Lock();
+			fwupdate.in_progress = false;
+			return;
+		}
+		//Double word means it writes 64 bits at a time (a word is 32 bits)
+		//Might have to change around the values
+		fwupdate->flash_address += 8U; //8 bytes long = 64 bits
+		bytes_written += to_copy;
+	}
 	HAL_FLASH_Lock();
+
+	fwupdate.offset += pkt.data.len;
+	fwupdate.last_read_ms = 0; // makes it so fwupdate check in sendFirmwareRead will go through right away
 }
 
 // uavcan.equipment.actuator.status
@@ -219,6 +239,8 @@ static void send_firimware_read(void){
 						   &buffer[0],
 						   total_size);
 }
+
+
 
 static void handleGetNodeInfo(CanardRxTransfer *transfer)
 {
