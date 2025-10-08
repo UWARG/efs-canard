@@ -72,9 +72,9 @@ int main(void)
 
   /* USER CODE BEGIN 1 */
 	nodeStatus.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_OK;
-	  nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_INITIALIZATION;
-	  nodeStatus.sub_mode = 0;
-	  nodeStatus.vendor_specific_status_code = 0;
+	nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_INITIALIZATION;
+	nodeStatus.sub_mode = 0;
+	nodeStatus.vendor_specific_status_code = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -108,6 +108,9 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  if(fwupdate.node_id != 0){
+		  sendFirmwareRead();
+	  }
 
     /* USER CODE BEGIN 3 */
 	  sendCANTx();

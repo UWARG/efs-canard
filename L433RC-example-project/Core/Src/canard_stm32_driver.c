@@ -2,6 +2,7 @@
 #include "canard.h"
 #include "dronecan_msgs.h"
 #include "stm32l4xx_hal.h"
+#include "canard_stm32_driver.h"
 
 #define CAN_NODE_NAME          "6SSERVO"
 #define CAN_NODE_ID            69U
@@ -19,15 +20,6 @@ static CanardInstance canard;
 static uint8_t canardMemPool[1024];
 static uint8_t hardwareID[16];
 
-static struct {
-    char path[256];
-    uint8_t node_id;
-    uint8_t transfer_id;
-    uint32_t last_read_ms;
-    uint32_t offset;            // Byte offset in firmware file
-	uint32_t flash_address;     // Current staging flash write address
-	bool in_progress;           // Is update running?
-} fwupdate;
 
 // === tx dronecan ===
 // uavcan.protocol.nodestatus
@@ -68,6 +60,7 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 
 	if (pkt.error.value != UAVCAN_PROTOCOL_FILE_ERROR_OK) {
 		/* read failed */
+		fwupdate.in_progress = false;
 		fwupdate.node_id = 0;
 		printf("Firmware update read failure\n");
 		return;
@@ -76,6 +69,7 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 	if (pkt.data.len == 0) {
 	    // No more data – update complete --> need to add flags for this to stop the update now
 	    fwupdate.in_progress = false;
+	    fwupdate.node_id = 0;
 	    printf("Firmware update complete\n");
 	    return;
 	}
@@ -117,38 +111,6 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 // === rx dronecan ===
 // uavcan.protocol.getnodeinfo
 
-static void sendFirmwareRead(void){
-
-	uint32_t now = millis32();
-	if (now - fwupdate.last_read_ms < 750) {
-		// the server may still be responding
-		return;
-	}
-	fwupdate.last_read_ms = now;
-
-	uint8_t buffer[UAVCAN_PROTOCOL_FILE_READ_REQUEST_MAX_SIZE];
-
-	struct uavcan_protocol_file_ReadRequest pkt;
-	memset(&pkt, 0, sizeof(pkt));
-
-	pkt.path.path.len = strlen((const char *)fwupdate.path);
-	pkt.offset = fwupdate.offset;
-	memcpy(pkt.path.path.data, fwupdate.path, pkt.path.path.len);
-
-
-	uint16_t total_size = uavcan_protocol_file_ReadRequest_encode(&pkt, buffer);
-
-	canardRequestOrRespond(&canard,
-			   fwupdate.node_id,
-			   UAVCAN_PROTOCOL_FILE_READ_SIGNATURE,
-			   UAVCAN_PROTOCOL_FILE_READ_ID,
-			   &fwupdate.transfer_id,
-			   CANARD_TRANSFER_PRIORITY_HIGH,
-			   CanardRequest,
-			   &buffer[0],
-			   total_size);
-
-}
 
 void eraseStagingFlash(void){
 
@@ -209,6 +171,7 @@ static void handleBeginFirmwareUpdate(CanardRxTransfer *transfer)
 
 	return true;
 }
+
 
 static void send_firimware_read(void){
 	uint32_t now = millis32();
@@ -346,25 +309,10 @@ void onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
         handleGetNodeInfo(transfer);
         return;
       case UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID:
-//    	  uint8_t txBuffer[UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_MAX_SIZE] = {0};
-//    	  static uint8_t transferID = 0;
-//
-//    	  uavcan_protocol_file_BeginFirmwareUpdateResponse msg;
-//    	  msg.error = 0;
-//
-//    	  uint32_t dataLength = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&msg, txBuffer);
-//    	  CanardTxTransfer txFrame = {
-//    	      CanardTransferTypeResponse,
-//			  UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_SIGNATURE,
-//			  UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_RESPONSE_ID,
-//    	      transferID++,
-//    	      CANARD_TRANSFER_PRIORITY_LOW,
-//    	      txBuffer,
-//    	      dataLength
-//    	    };
-//    	  canardRequestOrRespondObj(&canard, transfer->source_node_id, &txFrame);
     	  handleBeginFirmwareUpdate(transfer); //Maybe check to see if already updating
     	  return;
+      case UAVCAN_PROTOCOL_FILE_READ_ID:
+          	  handleFileReadResponse(transfer);
       default:
         return;
     }
