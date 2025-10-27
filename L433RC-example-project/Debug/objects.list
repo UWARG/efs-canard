@@ -8,6 +8,7 @@
 "./Core/Src/syscalls.o"
 "./Core/Src/sysmem.o"
 "./Core/Src/system_stm32l4xx.o"
+"./Core/Src/usart.o"
 "./Core/Startup/startup_stm32l433rctxp.o"
 "./Core/dsdlc_generated/src/ardupilot.equipment.power.BatteryCells.o"
 "./Core/dsdlc_generated/src/ardupilot.equipment.power.BatteryContinuous.o"
@@ -196,3 +197,5 @@
 "./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_rcc_ex.o"
 "./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim.o"
 "./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_tim_ex.o"
+"./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_uart.o"
+"./Drivers/STM32L4xx_HAL_Driver/Src/stm32l4xx_hal_uart_ex.o"

@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "can.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -55,13 +56,13 @@ static struct uavcan_protocol_NodeStatus node_status;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-
+static void goto_application(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-// The actual ISR, modify this to your needs
-// Run HAL_CAN_ActivateNotification(&hcan1, CAN_IT_RX_FIFO0_MSG_PENDING) once to set up the ISR
+
+/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -96,7 +97,11 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  printf("STARTING BOOTLOADER...");
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_SET);
+
   initCAN();
 
    nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
@@ -108,13 +113,16 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 	  if(fwupdate.node_id != 0){
 		  sendFirmwareRead();
 	  }
 
-    /* USER CODE BEGIN 3 */
 	  sendCANTx();
 	  periodicCANTasks();
+
+	  goto_application();
   }
   /* USER CODE END 3 */
 }
@@ -169,6 +177,30 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+#ifdef __GNUC__
+int __io_putchar(int ch)
+#else
+int fputc(int ch, FILE *f)
+#endif
+{
+	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+}
+
+static void goto_application(void){
+	printf("Jumping to application...\n");
+	void (*app_reset_handler)(void) = (void (*)(void))(*(volatile uint32_t*)(0x08020000 + 4));
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
+
+	/* Reset the Clock */
+	HAL_RCC_DeInit();
+	HAL_DeInit();
+	__set_MSP(*(volatile uint32_t*) 0x08020000);
+	SysTick->CTRL = 0;
+	SysTick->LOAD = 0;
+	SysTick->VAL = 0;
+
+	app_reset_handler();
+}
 
 /* USER CODE END 4 */
 

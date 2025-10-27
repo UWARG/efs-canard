@@ -223,7 +223,10 @@ Core/Src/canard_stm32_driver.o: ../Core/Src/canard_stm32_driver.c \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_flash_ex.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_flash_ramfunc.h \
  ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h \
- ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h
+ ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h \
+ ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h \
+ ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h \
+ ../Core/Inc/canard_stm32_driver.h
 ../Core/Inc/canard.h:
 C:/Users/sjina/STM32CubeIDE/workspace_1.16.0/efs-canard/L433RC-example-project/Core/dsdlc_generated/inc/dronecan_msgs.h:
 C:/Users/sjina/STM32CubeIDE/workspace_1.16.0/efs-canard/L433RC-example-project/Core/dsdlc_generated/inc/../inc/ardupilot.equipment.power.BatteryCells.h:
@@ -449,3 +452,6 @@ C:/Users/sjina/STM32CubeIDE/workspace_1.16.0/efs-canard/L433RC-example-project/C
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_flash_ramfunc.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr.h:
 ../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_pwr_ex.h:
+../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart.h:
+../Drivers/STM32L4xx_HAL_Driver/Inc/stm32l4xx_hal_uart_ex.h:
+../Core/Inc/canard_stm32_driver.h:
