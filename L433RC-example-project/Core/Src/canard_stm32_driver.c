@@ -86,14 +86,14 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 
 		memcpy(&double_word, chunk, 8); // Makes a 64 bit object for the HAL_FLASH
 
-		if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, fwupdate->flash_address, double_word) != HAL_OK){
+		if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, fwupdate.flash_address, double_word) != HAL_OK){
 			HAL_FLASH_Lock();
 			fwupdate.in_progress = false;
 			return;
 		}
 		//Double word means it writes 64 bits at a time (a word is 32 bits)
 		//Might have to change around the values
-		fwupdate->flash_address += 8U; //8 bytes long = 64 bits
+		fwupdate.flash_address += 8U; //8 bytes long = 64 bits
 		bytes_written += to_copy;
 	}
 	HAL_FLASH_Lock();
@@ -120,7 +120,7 @@ void eraseStagingFlash(void){
 	uint32_t page_error = 0;
 	// This assumes a 32kb bootloader size. (From 0x08000000 - 0x08008000)
 	uint32_t page_num = (0x08008000-0x08000000)/0x800; //0x800 is 2kb which is 1 page length according to data sheet
-	fwupdate->flash_address = 0x08008000;
+	fwupdate.flash_address = 0x08008000; // Need to change this maybe to make sure that bootloader is not affected
 	erase.Page = page_num;
 	erase.NbPages = 16; //Assuming 32kb for staging slot
 	erase.TypeErase = FLASH_TYPEERASE_PAGES;
@@ -133,15 +133,15 @@ void eraseStagingFlash(void){
 
 }
 
-static void handleBeginFirmwareUpdate(CanardRxTransfer *transfer)
+static void handleBeginFirmwareUpdate(CanardInstance* ins, CanardRxTransfer *transfer)
 {
 	nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_SOFTWARE_UPDATE;
 	//deconde message to get file path
-	uavcan_protocol_file_BeginFirmwareUpdateRequest req;
-	uavcan_protocol_file_BeginFirmwareUpdateRequest_decode((const)transfer, req);
+	struct uavcan_protocol_file_BeginFirmwareUpdateRequest req;
+	uavcan_protocol_file_BeginFirmwareUpdateRequest_decode((const)transfer, &req);
 
 	uint8_t source_node_id = transfer->source_node_id;
-	uint8_t file_path_bytes[] = req.image_file_remote_path.path.data;
+	uint8_t *file_path_bytes = req.image_file_remote_path.path.data;
 	uint8_t file_len = req.image_file_remote_path.path.len;
 
 	fwupdate.offset = 0;
@@ -155,7 +155,7 @@ static void handleBeginFirmwareUpdate(CanardRxTransfer *transfer)
 
 	uint32_t total_size = uavcan_protocol_file_BeginFirmwareUpdateResponse_encode(&reply, buffer);
 
-	canardRequestOrRespond(ins,
+	canardRequestOrRespond(ins, // Need to pass in CanardInstance ins ex --> static void handle_param_ExecuteOpcode(CanardInstance* ins, CanardRxTransfer* transfer)
 						   transfer->source_node_id,
 						   UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_SIGNATURE,
 						   UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID,
@@ -173,8 +173,8 @@ static void handleBeginFirmwareUpdate(CanardRxTransfer *transfer)
 }
 
 
-static void send_firimware_read(void){
-	uint32_t now = millis32();
+void sendFirmwareRead(void){
+	uint32_t now = HAL_GetTick();
 	if (now - fwupdate.last_read_ms < 750) {
 		// the server may still be responding
 		return;
@@ -309,10 +309,10 @@ void onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
         handleGetNodeInfo(transfer);
         return;
       case UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID:
-    	  handleBeginFirmwareUpdate(transfer); //Maybe check to see if already updating
+    	  handleBeginFirmwareUpdate(ins, transfer); //Maybe check to see if already updating
     	  return;
       case UAVCAN_PROTOCOL_FILE_READ_ID:
-          	  handleFileReadResponse(transfer);
+          	  handleFileReadResponse(ins, transfer);
       default:
         return;
     }

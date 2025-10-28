@@ -115,14 +115,14 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  if(fwupdate.node_id != 0){
-		  sendFirmwareRead();
-	  }
+	if(fwupdate.node_id != 0){
+	  sendFirmwareRead();
+	}
 
-	  sendCANTx();
-	  periodicCANTasks();
+	sendCANTx();
+	periodicCANTasks();
 
-	  goto_application();
+	goto_application();
   }
   /* USER CODE END 3 */
 }

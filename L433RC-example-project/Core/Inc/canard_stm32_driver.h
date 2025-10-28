@@ -1,5 +1,5 @@
 #pragma once
-
+#include "canard.h"
 /**
   * @brief  Initialize HAL CAN and canard.
   * @retval None
@@ -18,7 +18,7 @@ void sendCANTx(void);
   */
 void periodicCANTasks(void);
 
-static void send_firimware_read(void);
+void sendFirmwareRead(void);
 
 
 // FW update struct
