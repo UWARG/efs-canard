@@ -22,7 +22,7 @@ void sendFirmwareRead(void);
 
 
 // FW update struct
-static struct {
+typedef struct {
     char path[256];
     uint8_t node_id;
     uint8_t transfer_id;
@@ -30,4 +30,6 @@ static struct {
     uint32_t offset;            // Byte offset in firmware file
 	uint32_t flash_address;     // Current staging flash write address
 	bool in_progress;           // Is update running?
-} fwupdate;
+} FirmwareUpdate;
+
+extern FirmwareUpdate fwupdate;

@@ -51,6 +51,7 @@ extern struct uavcan_protocol_NodeStatus nodeStatus;
 static CanardInstance canard;
 static uint8_t memory_pool[1024];
 static struct uavcan_protocol_NodeStatus node_status;
+FirmwareUpdate fwupdate;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -61,7 +62,15 @@ static void goto_application(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+#ifdef __GNUC__
+int __io_putchar(int ch)
+#else
+int fputc(int ch, FILE *f)
+#endif
+{
+	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+	return ch;
+}
 /* USER CODE END 0 */
 
 /**
@@ -104,7 +113,17 @@ int main(void)
 
   initCAN();
 
-   nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+  nodeStatus.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_OPERATIONAL;
+
+	for(uint8_t i = 0; i < 100000000; i++){
+		if(fwupdate.node_id != 0){
+			break;
+		}
+		HAL_Delay(10);
+//		printf("In Loop\n\r");
+		sendCANTx();
+		periodicCANTasks();
+	}
 
   /* USER CODE END 2 */
 
@@ -115,14 +134,18 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	if(fwupdate.node_id != 0){
-	  sendFirmwareRead();
+
+
+	if(fwupdate.node_id == 0){
+		goto_application();
+	}else{
+		sendFirmwareRead();
 	}
 
 	sendCANTx();
 	periodicCANTasks();
 
-	goto_application();
+
   }
   /* USER CODE END 3 */
 }
@@ -177,28 +200,31 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-#ifdef __GNUC__
-int __io_putchar(int ch)
-#else
-int fputc(int ch, FILE *f)
-#endif
-{
-	HAL_UART_Transmit(&huart1, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-}
 
 static void goto_application(void){
-	printf("Jumping to application...\n");
 	void (*app_reset_handler)(void) = (void (*)(void))(*(volatile uint32_t*)(0x08020000 + 4));
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
+	HAL_Delay(1000);
 
 	/* Reset the Clock */
 	HAL_RCC_DeInit();
 	HAL_DeInit();
+	__disable_irq();
+
 	__set_MSP(*(volatile uint32_t*) 0x08020000);
 	SysTick->CTRL = 0;
 	SysTick->LOAD = 0;
 	SysTick->VAL = 0;
 
+	SCB->VTOR = 0x08020000;
+
+	// Disable all NVIC interrupts
+	for (int i = 0; i < 8; i++) {
+		NVIC->ICER[i] = 0xFFFFFFFF;
+		NVIC->ICPR[i] = 0xFFFFFFFF;
+	}
+
+	__enable_irq();
 	app_reset_handler();
 }
 

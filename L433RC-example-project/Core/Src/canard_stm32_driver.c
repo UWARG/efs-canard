@@ -43,7 +43,7 @@ static void sendNodeStatus(void)
   canardBroadcastObj(&canard, &txFrame);
 }
 
-static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transfer){
+static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transfer){ // This isn't being called
 	if ((transfer->transfer_id+1)%32 != fwupdate.transfer_id ||
 		transfer->source_node_id != fwupdate.node_id) {
 		/* not for us */
@@ -82,6 +82,8 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 		uint32_t remain = pkt.data.len - bytes_written;
 		uint32_t to_copy = (remain >= 8U) ? 8U : remain;
 
+		memcpy(chunk, &pkt.data.data[bytes_written], to_copy);
+
 		uint64_t double_word;
 
 		memcpy(&double_word, chunk, 8); // Makes a 64 bit object for the HAL_FLASH
@@ -89,6 +91,7 @@ static void handleFileReadResponse(CanardInstance* ins, CanardRxTransfer* transf
 		if(HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, fwupdate.flash_address, double_word) != HAL_OK){
 			HAL_FLASH_Lock();
 			fwupdate.in_progress = false;
+			fwupdate.node_id = 0;
 			return;
 		}
 		//Double word means it writes 64 bits at a time (a word is 32 bits)
@@ -119,12 +122,13 @@ void eraseStagingFlash(void){
 	FLASH_EraseInitTypeDef erase = {0};
 	uint32_t page_error = 0;
 	// This assumes a 32kb bootloader size. (From 0x08000000 - 0x08008000)
-	uint32_t page_num = (0x08008000-0x08000000)/0x800; //0x800 is 2kb which is 1 page length according to data sheet
-	fwupdate.flash_address = 0x08008000; // Need to change this maybe to make sure that bootloader is not affected
+	uint32_t page_num = (0x08020000-0x08000000)/0x800; //0x800 is 2kb which is 1 page length according to data sheet
+	// Line above shows starting page for memory wipe
+	fwupdate.flash_address = 0x08020000; // Need to change this maybe to make sure that bootloader is not affected
 	erase.Page = page_num;
 	erase.NbPages = 16; //Assuming 32kb for staging slot
 	erase.TypeErase = FLASH_TYPEERASE_PAGES;
-
+	//erase.Banks     = FLASH_BANK_1; // Always specify on STM32L4/F4
 	if(HAL_FLASHEx_Erase(&erase, &page_error) != HAL_OK){
 		//TODO: handle error
 	}
@@ -140,9 +144,9 @@ static void handleBeginFirmwareUpdate(CanardInstance* ins, CanardRxTransfer *tra
 	struct uavcan_protocol_file_BeginFirmwareUpdateRequest req;
 	uavcan_protocol_file_BeginFirmwareUpdateRequest_decode((const)transfer, &req);
 
-	uint8_t source_node_id = transfer->source_node_id;
-	uint8_t *file_path_bytes = req.image_file_remote_path.path.data;
-	uint8_t file_len = req.image_file_remote_path.path.len;
+	uint8_t source_node_id = 		transfer->source_node_id;
+	uint8_t *file_path_bytes = 		req.image_file_remote_path.path.data;
+	uint8_t file_len = 				req.image_file_remote_path.path.len;
 
 	fwupdate.offset = 0;
 	fwupdate.node_id = source_node_id;
@@ -169,7 +173,7 @@ static void handleBeginFirmwareUpdate(CanardInstance* ins, CanardRxTransfer *tra
 	//erase the flash staging area
 	eraseStagingFlash();
 
-	return true;
+//	return true;
 }
 
 
@@ -249,6 +253,9 @@ bool shouldAcceptTransfer(const CanardInstance* ins, uint64_t* crcSignature, uin
   {
     switch(dataTypeID)
     {
+    case UAVCAN_PROTOCOL_FILE_READ_ID:
+			*crcSignature = UAVCAN_PROTOCOL_FILE_READ_SIGNATURE;
+			return true;   // accept File.Read responses
       default:
         return false;
     }
@@ -296,6 +303,9 @@ void onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
   {
     switch(transfer->data_type_id)
     {
+    case UAVCAN_PROTOCOL_FILE_READ_ID:
+    	handleFileReadResponse(ins, transfer);
+    	break;
       default:
         return;
     }
@@ -311,8 +321,8 @@ void onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
       case UAVCAN_PROTOCOL_FILE_BEGINFIRMWAREUPDATE_ID:
     	  handleBeginFirmwareUpdate(ins, transfer); //Maybe check to see if already updating
     	  return;
-      case UAVCAN_PROTOCOL_FILE_READ_ID:
-          	  handleFileReadResponse(ins, transfer);
+//      case UAVCAN_PROTOCOL_FILE_READ_ID:
+//          	  handleFileReadResponse(ins, transfer);
       default:
         return;
     }
@@ -325,6 +335,9 @@ void onTransferReceived(CanardInstance* ins, CanardRxTransfer* transfer)
       case UAVCAN_EQUIPMENT_ACTUATOR_ARRAYCOMMAND_ID:
         handleArrayCommand(transfer);
         return;
+      case UAVCAN_PROTOCOL_FILE_READ_ID:
+          	handleFileReadResponse(ins, transfer);
+          	break;
       default:
         return;
     }

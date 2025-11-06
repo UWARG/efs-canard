@@ -1,6 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
-# Toolchain: GNU Tools for STM32 (12.3.rel1)
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
 ################################################################################
 
 -include ../makefile.init
@@ -61,8 +61,8 @@ all: main-build
 main-build: example-project.elf secondary-outputs
 
 # Tool invocations
-example-project.elf example-project.map: $(OBJS) $(USER_OBJS) C:\Users\WARG\Documents\efs\efs-canard\example-project\STM32L431KCUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "example-project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\WARG\Documents\efs\efs-canard\example-project\STM32L431KCUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="example-project.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+example-project.elf example-project.map: $(OBJS) $(USER_OBJS) C:\Users\sjina\STM32CubeIDE\workspace_1.16.0\efs-canard\example-project\STM32L431KCUX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "example-project.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\sjina\STM32CubeIDE\workspace_1.16.0\efs-canard\example-project\STM32L431KCUX_FLASH.ld" --specs=nosys.specs -Wl,-Map="example-project.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
